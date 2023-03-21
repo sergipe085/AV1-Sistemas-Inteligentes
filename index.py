@@ -1,5 +1,7 @@
 import numpy as np 
 import matplotlib.pyplot as plt
+from models import mmq, mmq_regularizado
+from utils import get_accuracy, qualificate
 
 Data = np . loadtxt ("EMG.csv", delimiter =",") 
 Rotulos = np . loadtxt ("Rotulos.csv", delimiter =",")
@@ -7,32 +9,11 @@ RODADAS = 100
 
 mapper = ["Neutro", "Sorriso", "Aberto", "Surpreso", "Grumpy"]
 
-def qualificate(y_prev):
-	minor_distance = 1000000.0
-	minor_index = -1
-	for i in range(len(y_prev)):
-		distance = 1 - y_prev[i]
-		if (distance < minor_distance):
-			minor_distance = distance
-			minor_index = i
+def check_results(y_prev_array, treino, Yteste):
+	accuracy = get_accuracy(y_prev_array, Yteste)
+	print(f"TREINO {treino}; ACCURACY: {accuracy:.10f}%")
 
-	return mapper[minor_index]
-
-def check_results(y_prev_array, treino):
-	y_prev_array = Xteste@B;	
-	correct_counter = 0
-	total = 10000
-	for i in range(len(y_prev_array)):
-		expected = qualificate(Yteste[i])
-		result = qualificate(y_prev_array[i])
-		#print(f"EXPECTED: {expected} GET: {result}")
-		if (expected == result):
-			correct_counter += 1
-
-	accuracy = (correct_counter/total) * 100
-	print(f"TREINO {treino} = ACCURACY: {accuracy:.2f}%")
-
-for i in range ( RODADAS ):
+def get_data():
 	seed = np . random . permutation ( Data . shape [0]) 
 	X = Data [ seed ,:] 
 	Y = Rotulos [ seed ,:] 
@@ -46,18 +27,33 @@ for i in range ( RODADAS ):
 	Xteste = X[ int (X. shape [0]*.8) : ,:] 
 	Yteste = Y[ int (X. shape [0]*.8) : ,:] 
 
+	return Xtreino, Ytreino, Xteste, Yteste
+
+## DUVIDA: mudar o lambda nao muda a acuracia, pq?
+mmq_regularizado_model = mmq_regularizado()
+Xtreino, Ytreino, Xteste, Yteste = get_data()
+mmq_regularizado_model.find_lambda(Xtreino, Ytreino, Xteste, Yteste)
+
+for i in range ( RODADAS ):
+	Xtreino, Ytreino, Xteste, Yteste = get_data()
+
 	## MMQ ##
 
 	# estimacao do modelo (treino)
-	B = np.linalg.inv(Xtreino.T@Xtreino)@Xtreino.T@Ytreino
+	mmq_model = mmq()
+	mmq_model.estimate(Xtreino, Ytreino)
 
-	y_prev_array = Xteste@B;	
-	check_results(y_prev_array, i)
+	# teste do modelo
+	y_prev_array = mmq_model.execute(Xteste)
+	check_results(y_prev_array, i, Yteste)
 
-	## MMQ regularizado ##
+	## MMQ REGULARIZADO ##
+	mmq_regularizado_model.estimate(Xtreino, Ytreino)
+	y_prev_array = mmq_regularizado_model.execute(Xteste)
+	check_results(y_prev_array, i, Yteste)
 
 	## Naive Bayes ##
 
 	## KNN ##
 
-	## DMC ##
+	## DMC ##	
