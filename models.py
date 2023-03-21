@@ -43,8 +43,6 @@ class mmq_regularizado:
 
             accuracy = get_accuracy(y_prev, y_teste)
 
-            print(accuracy)
-
             if accuracy > max_accuracy:
                 max_accuracy = accuracy
                 max_lambda = i

@@ -14,6 +14,7 @@ def qualificate(y_prev):
 def get_accuracy(y_prev_array, Yteste):
 	correct_counter = 0
 	total = 10000
+	accuracy_accumulator = 0.0
 	for i in range(len(y_prev_array)):
 		expected = qualificate(Yteste[i])
 		result = qualificate(y_prev_array[i])

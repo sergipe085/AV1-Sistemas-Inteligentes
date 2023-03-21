@@ -1,17 +1,26 @@
 import numpy as np 
 import matplotlib.pyplot as plt
 from models import mmq, mmq_regularizado
-from utils import get_accuracy, qualificate
+from utils import get_accuracy
 
 Data = np . loadtxt ("EMG.csv", delimiter =",") 
 Rotulos = np . loadtxt ("Rotulos.csv", delimiter =",")
 RODADAS = 100
 
-mapper = ["Neutro", "Sorriso", "Aberto", "Surpreso", "Grumpy"]
-
-def check_results(y_prev_array, treino, Yteste):
+def check_results(y_prev_array, rodada, Yteste, modelo):
 	accuracy = get_accuracy(y_prev_array, Yteste)
-	print(f"TREINO {treino}; ACCURACY: {accuracy:.10f}%")
+	print(f"{modelo} - RODADA: {rodada}; ACCURACY: {accuracy:.10f}%")
+
+
+def print_result(modelo_nome, acuracias):
+	acuracia_total = 0.0
+	for ac in acuracias:
+		acuracia_total += ac
+
+	media = acuracia_total / len(acuracias)
+	menor = min(acuracias)
+	maior = max(acuracias)
+	print(f"{modelo_nome} - Media: {media:.2f}%, Menor: {menor:.2f}%, Maior: {maior:.2f}%")
 
 def get_data():
 	seed = np . random . permutation ( Data . shape [0]) 
@@ -29,31 +38,56 @@ def get_data():
 
 	return Xtreino, Ytreino, Xteste, Yteste
 
-## DUVIDA: mudar o lambda nao muda a acuracia, pq?
-mmq_regularizado_model = mmq_regularizado()
-Xtreino, Ytreino, Xteste, Yteste = get_data()
-mmq_regularizado_model.find_lambda(Xtreino, Ytreino, Xteste, Yteste)
+def execute_mmq():
+	print("Iniciando MMQ Ordinario...")
 
-for i in range ( RODADAS ):
+	acuracias = []
+
+	for i in range(RODADAS):
+		Xtreino, Ytreino, Xteste, Yteste = get_data()
+
+		# estimacao do modelo (treino)
+		mmq_model = mmq()
+		mmq_model.estimate(Xtreino, Ytreino)
+
+		# teste do modelo
+		y_prev_array = mmq_model.execute(Xteste)
+		acuracia = get_accuracy(y_prev_array, Yteste)
+		acuracias.append(acuracia)
+
+	print_result("MMQ Ordinario", acuracias)
+
+def execute_mmq_regularizado():
+	print("Iniciando MMQ Regularizado...")
+
+	mmq_regularizado_model = mmq_regularizado()
+
 	Xtreino, Ytreino, Xteste, Yteste = get_data()
+	## DUVIDA: mudar o lambda nao muda a acuracia, pq?
+	mmq_regularizado_model.find_lambda(Xtreino, Ytreino, Xteste, Yteste)
 
-	## MMQ ##
+	acuracias = []
 
-	# estimacao do modelo (treino)
-	mmq_model = mmq()
-	mmq_model.estimate(Xtreino, Ytreino)
+	for i in range(RODADAS):
+		Xtreino, Ytreino, Xteste, Yteste = get_data()
+		mmq_regularizado_model.estimate(Xtreino, Ytreino)
+		y_prev_array = mmq_regularizado_model.execute(Xteste)
 
-	# teste do modelo
-	y_prev_array = mmq_model.execute(Xteste)
-	check_results(y_prev_array, i, Yteste)
+		acuracia = get_accuracy(y_prev_array, Yteste)
+		acuracias.append(acuracia)
+		
+	print_result("MMQ Regularizado", acuracias)
 
-	## MMQ REGULARIZADO ##
-	mmq_regularizado_model.estimate(Xtreino, Ytreino)
-	y_prev_array = mmq_regularizado_model.execute(Xteste)
-	check_results(y_prev_array, i, Yteste)
+## MMQ ##
 
-	## Naive Bayes ##
+execute_mmq()
 
-	## KNN ##
+## MMQ REGULARIZADO ##
 
-	## DMC ##	
+execute_mmq_regularizado()
+
+## Naive Bayes ##
+
+## KNN ##
+
+## DMC ##	
