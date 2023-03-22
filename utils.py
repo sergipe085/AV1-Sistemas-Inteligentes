@@ -1,3 +1,5 @@
+import time
+
 mapper = ["Neutro", "Sorriso", "Aberto", "Surpreso", "Grumpy"]
 
 def qualificate(y_prev):
@@ -23,3 +25,13 @@ def get_accuracy(y_prev_array, Yteste):
 
 	accuracy = (correct_counter/total) * 100
 	return accuracy
+
+def execution_time(_function):
+	start_time = time.time()
+
+	response = _function()
+
+	finish_time = time.time()
+
+	total_time = finish_time - start_time
+	return response, total_time
