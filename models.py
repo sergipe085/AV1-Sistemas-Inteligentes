@@ -37,7 +37,6 @@ class mmq_regularizado:
         max_accuracy = 0.0
         max_lambda = 0.0
         while i <= 1.0:
-            
             self.estimate_with_lambda(x_treino, y_treino, i)
             y_prev = self.execute(x_teste)
 
@@ -82,18 +81,25 @@ class naive_bayes:
         self.matrizes_de_covariancia = matrizes_de_covariancia
         self.mis = mis
 
-    def execute(self, x):
+    def execute(self, x, Regularizado):
         valores = []
         for i in range(0, 5):
-            r = self.discriminante(x, self.mis[i], self.matrizes_de_covariancia[i])
+            if (Regularizado == False):
+                r = self.discriminante_normal(x, self.mis[i])
+            else:
+                r = self.discriminante_regularized(x, self.mis[i], self.matrizes_de_covariancia[i])
             valores.append(r)
 
         return valores
 
-    def discriminante(self, x, mi, matriz_de_covariancia):
+    def discriminante_normal(self, x, mi):        
+        r = (x - mi).T @ (x - mi)
+        return r
+    
+    def discriminante_regularized(self, x, mi, matriz_de_covariancia):
         reg_cov = np.eye(matriz_de_covariancia.shape[0]) * 1e-6
-        cov_regularized = matriz_de_covariancia + reg_cov
-        cov_regularized_diag = np.diag(np.diag(cov_regularized))
-        r = (x - mi).T @ np.linalg.inv(cov_regularized_diag) @ (x - mi)
+        mcv = matriz_de_covariancia + reg_cov
+        mcv = np.diag(np.diag(mcv))
+        r = (x - mi).T @ np.linalg.inv(mcv) @ (x - mi)
         return r
     
