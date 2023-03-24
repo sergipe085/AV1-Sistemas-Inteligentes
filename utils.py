@@ -13,6 +13,38 @@ def qualificate(y_prev):
 
 	return mapper[minor_index]
 
+def qualificate_major(y_prev):
+	maximo = 0
+	maximo_index = -1
+	for i in range(len(y_prev)):
+		if (y_prev[i] > maximo):
+			maximo = y_prev[i]
+			maximo_index = i
+
+	return mapper[maximo_index]
+
+def qualificate_minor(y_prev):
+	minimo = 100000000.0
+	minimo_index = -1
+	for i in range(len(y_prev)):
+		if (y_prev[i] < minimo):
+			minimo = y_prev[i]
+			minimo_index = i
+
+	return mapper[minimo_index]
+
+def qualificate_index(y_prev):
+	minor_distance = 1000000.0
+	minor_index = -1
+	for i in range(len(y_prev)):
+		distance = 1 - y_prev[i]
+		if (distance < minor_distance):
+			minor_distance = distance
+			minor_index = i
+
+	return minor_index
+
+
 def get_accuracy(y_prev_array, Yteste):
 	correct_counter = 0
 	total = 10000
@@ -35,3 +67,17 @@ def execution_time(_function):
 
 	total_time = finish_time - start_time
 	return response, total_time
+
+def get_class_label(y_prev, return_label=True):
+    max_value = 0.0
+    min_index = -1
+    for i in range(len(y_prev)):
+        value = y_prev[i]
+        if value > max_value:
+            max_value = value
+            min_index = i
+
+    if return_label:
+        return mapper[min_index]
+    else:
+        return min_index

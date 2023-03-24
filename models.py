@@ -1,6 +1,6 @@
 
 import numpy as np
-from utils import get_accuracy
+from utils import get_accuracy, qualificate_index, qualificate, qualificate_minor, get_class_label
 
 class mmq:
     def __init__(self):
@@ -50,4 +50,50 @@ class mmq_regularizado:
             i+=0.1
 
         self.lbda = max_lambda
-	
+
+class naive_bayes:
+    def estimate(self, x_treino, y_treino):
+        x_treino_separado = [[], [], [], [], []]
+        matrizes_de_covariancia = []
+        mis = []
+
+        # separar os dados para cada classe
+        for i in range(len(x_treino)):
+            x = x_treino[i]
+            y = y_treino[i]
+            y_index = qualificate_index(y)
+            x_treino_separado[y_index].append(x)
+
+        for xi in x_treino_separado:
+
+            # estimar as matrizes de covariancia 
+            matriz_de_covariancia = np.cov(np.array(xi).T)
+            matrizes_de_covariancia.append(matriz_de_covariancia)
+
+            # estimar os mis
+            total = [0, 0]
+            for i in xi:
+                total[0] += i[0]
+                total[1] += i[1]
+
+            mis.append(np.array([total[0] / len(xi), total[1] / len(xi)]))
+            bp = 1
+
+        self.matrizes_de_covariancia = matrizes_de_covariancia
+        self.mis = mis
+
+    def execute(self, x):
+        valores = []
+        for i in range(0, 5):
+            r = self.discriminante(x, self.mis[i], self.matrizes_de_covariancia[i])
+            valores.append(r)
+
+        return valores
+
+    def discriminante(self, x, mi, matriz_de_covariancia):
+        reg_cov = np.eye(matriz_de_covariancia.shape[0]) * 1e-6
+        cov_regularized = matriz_de_covariancia + reg_cov
+        cov_regularized_diag = np.diag(np.diag(cov_regularized))
+        r = (x - mi).T @ np.linalg.inv(cov_regularized_diag) @ (x - mi)
+        return r
+    

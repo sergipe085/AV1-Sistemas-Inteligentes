@@ -1,15 +1,11 @@
 import numpy as np 
 import matplotlib.pyplot as plt
-from models import mmq, mmq_regularizado
-from utils import get_accuracy, execution_time
+from models import mmq, mmq_regularizado, naive_bayes
+from utils import get_accuracy, execution_time, qualificate_minor, qualificate, qualificate_index
 
 Data = np . loadtxt ("EMG.csv", delimiter =",") 
 Rotulos = np . loadtxt ("Rotulos.csv", delimiter =",")
 RODADAS = 100
-
-def check_results(y_prev_array, rodada, Yteste, modelo):
-	accuracy = get_accuracy(y_prev_array, Yteste)
-	print(f"{modelo} - RODADA: {rodada}; ACCURACY: {accuracy:.10f}%")
 
 def print_result(modelo_nome, acuracias, tempo_previsao, tempo_execucao):
 	acuracia_total = 0.0
@@ -27,6 +23,20 @@ def get_data():
 	Y = Rotulos [ seed ,:] 
 
 	X = np.concatenate((np.ones((X.shape[0], 1)), X), axis=1)
+
+	# treino / teste : 14 
+	Xtreino = X [0: int( X. shape [0]*.8) ,:] 
+	Ytreino = Y [0: int( X. shape [0]*.8) ,:] 
+	
+	Xteste = X[ int (X. shape [0]*.8) : ,:] 
+	Yteste = Y[ int (X. shape [0]*.8) : ,:] 
+
+	return Xtreino, Ytreino, Xteste, Yteste
+
+def get_data_withouth_perceptron():
+	seed = np . random . permutation ( Data . shape [0]) 
+	X = Data [ seed ,:] 
+	Y = Rotulos [ seed ,:] 
 
 	# treino / teste : 14 
 	Xtreino = X [0: int( X. shape [0]*.8) ,:] 
@@ -95,16 +105,50 @@ def execute_mmq_regularizado():
 		
 	print_result(f"MMQ Regularizado", acuracias, tempo_ms_estimacao, tempo_ms_execucao)
 
-## MMQ ##
+def execute_naive_bayes():
+	for i in range(1):
 
-execute_mmq()
+		Xtreino, Ytreino, Xteste, Yteste = get_data_withouth_perceptron()
 
-## MMQ REGULARIZADO ##
+		nb = naive_bayes()
+		nb.estimate(Xtreino, Ytreino)
 
-execute_mmq_regularizado()
+		count = 0
+		for i in range(len(Xteste)):
+			y_prev_array = nb.execute(Xteste[i])
 
-## Naive Bayes ##
+			getted = qualificate_minor(y_prev_array)
+			expected = qualificate(Yteste[i])
 
-## KNN ##
+			if getted == expected:
+				count+=1
 
-## DMC ##	
+		acuracia = (count/len(Xteste)) * 100
+
+		print_result("Naive Bayes", [acuracia], 0, 0)
+            
+#execute_mmq()
+#execute_mmq_regularizado()
+#execute_naive_bayes()
+
+def plot_dados():
+	fig, ax = plt.subplots()
+
+	color_mapper = ["blue", "orange", "yellow", "red", "green"]
+
+	i = 0
+	while i <= len(Data):
+		label_index = int((i % 5000)/1000)
+
+		color = color_mapper[label_index]
+
+		ax.scatter(Data[i : i + 1000, 0], Data[i : i + 1000, 1], c=color)
+
+		i += 1000
+
+	ax.set_xlabel('Sensor 1')
+	ax.set_ylabel('Sensor 2')
+
+	plt.show()
+
+plot_dados()
