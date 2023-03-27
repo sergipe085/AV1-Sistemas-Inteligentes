@@ -1,6 +1,6 @@
 import numpy as np 
 import matplotlib.pyplot as plt
-from models import mmq, mmq_regularizado, naive_bayes
+from models import mmq, mmq_regularizado, naive_bayes, naive_bayes_pooled, naive_bayes_friedman
 from utils import get_accuracy, execution_time, qualificate_minor, qualificate, qualificate_index
 
 Data = np . loadtxt ("EMG.csv", delimiter =",") 
@@ -178,9 +178,81 @@ def execute_naive_bayes(Regularizado = False):
 
 	print_result(nome_modelo, acuracias, tempos_estimacao, tempos_execucao)
             
+def execute_naive_bayes_pooled():
+	nome_modelo = "Naive Bayes Pooled"
+	print(f"Iniciando {nome_modelo}...")
+	acuracias = []
+	tempos_estimacao = []
+	tempos_execucao = []
+	rodada_atual = 0
+	for i in range(RODADAS):
+		print_progress(rodada_atual, RODADAS)
+
+		Xtreino, Ytreino, Xteste, Yteste = get_data_withouth_perceptron()
+
+		nb_pooled = naive_bayes_pooled()
+		_, tempo_estimacao = execution_time(lambda: nb_pooled.estimate(Xtreino, Ytreino))
+
+		count = 0
+		for i in range(len(Xteste)):
+			y_prev_array, tempo_execucao = execution_time(lambda: nb_pooled.execute_pooled(Xteste[i]))
+
+			getted = qualificate_minor(y_prev_array)
+			expected = qualificate(Yteste[i])
+
+			if getted == expected:
+				count+=1
+
+		acuracia = (count/len(Xteste)) * 100
+
+		acuracias.append(acuracia)
+		tempos_estimacao.append(tempo_estimacao * 1000)
+		tempos_execucao.append(tempo_execucao * 1000)
+
+		rodada_atual += 1
+
+	print_result(nome_modelo, acuracias, tempos_estimacao, tempos_execucao)
+
+def execute_naive_bayes_fridman():
+	nome_modelo = "Naive Bayes Friedman"
+	print(f"Iniciando {nome_modelo}...")
+	acuracias = []
+	tempos_estimacao = []
+	tempos_execucao = []
+	rodada_atual = 0
+	for i in range(RODADAS):
+		print_progress(rodada_atual, RODADAS)
+
+		Xtreino, Ytreino, Xteste, Yteste = get_data_withouth_perceptron()
+
+		nb_fridman = naive_bayes_friedman(0.2)
+		_, tempo_estimacao = execution_time(lambda: nb_fridman.estimate(Xtreino, Ytreino))
+
+		count = 0
+		for i in range(len(Xteste)):
+			y_prev_array, tempo_execucao = execution_time(lambda: nb_fridman.execute_friedman(Xteste[i]))
+
+			getted = qualificate_minor(y_prev_array)
+			expected = qualificate(Yteste[i])
+
+			if getted == expected:
+				count+=1
+
+		acuracia = (count/len(Xteste)) * 100
+
+		acuracias.append(acuracia)
+		tempos_estimacao.append(tempo_estimacao * 1000)
+		tempos_execucao.append(tempo_execucao * 1000)
+
+		rodada_atual += 1
+
+	print_result(nome_modelo, acuracias, tempos_estimacao, tempos_execucao)
+
 execute_mmq()
 execute_mmq_regularizado()
 # execute_naive_bayes(Regularizado=True)
-# execute_naive_bayes()
+execute_naive_bayes()
+execute_naive_bayes_pooled()
+execute_naive_bayes_fridman()
 
 # plot_dados()

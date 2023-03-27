@@ -56,6 +56,8 @@ class naive_bayes:
         matrizes_de_covariancia = []
         mis = []
 
+        N = len(x_treino)
+
         # separar os dados para cada classe
         for i in range(len(x_treino)):
             x = x_treino[i]
@@ -101,5 +103,130 @@ class naive_bayes:
         mcv = matriz_de_covariancia + reg_cov
         mcv = np.diag(np.diag(mcv))
         r = (x - mi).T @ np.linalg.inv(mcv) @ (x - mi)
+        return r 
+    
+class naive_bayes_pooled:
+    def estimate(self, x_treino, y_treino):
+        x_treino_separado = [[], [], [], [], []]
+        mis = []
+
+        N = len(x_treino)
+
+        # separar os dados para cada classe
+        for i in range(len(x_treino)):
+            x = x_treino[i]
+            y = y_treino[i]
+            y_index = qualificate_index(y)
+            x_treino_separado[y_index].append(x)
+        
+        m_cov_agregada = np.empty((x_treino.shape[1], x_treino.shape[1]))
+        for xi in x_treino_separado:
+
+            # estimar as matrizes de covariancia 
+            matriz_de_covariancia = np.cov(np.array(xi).T)
+            m_cov_agregada += (len(xi)/N) * matriz_de_covariancia
+
+            # estimar os mis
+            total = [0, 0]
+            for i in xi:
+                total[0] += i[0]
+                total[1] += i[1]
+
+            mis.append(np.array([total[0] / len(xi), total[1] / len(xi)]))
+            bp = 1
+
+        self.mis = mis
+
+        self.m_cov_agregada = m_cov_agregada
+    
+    def execute_pooled(self, x):
+        valores = []
+        for i in range(0, 5):
+            r = self.discriminante_pooled(x, self.mis[i])
+            valores.append(r)
+
+        return valores
+    
+    def discriminante_pooled(self, x, mi):
+        mcv = self.m_cov_agregada
+        r = (x - mi).T @ np.linalg.inv(mcv) @ (x - mi)
         return r
     
+class naive_bayes_friedman:
+    def __init__(self, lbda) -> None:
+        self.lbda = lbda
+
+    def estimate(self, x_treino, y_treino):
+        x_treino_separado = [[], [], [], [], []]
+        matrizes_de_covariancia = []
+        mis = []
+
+        N = len(x_treino)
+
+        # separar os dados para cada classe
+        for i in range(len(x_treino)):
+            x = x_treino[i]
+            y = y_treino[i]
+            y_index = qualificate_index(y)
+            x_treino_separado[y_index].append(x)
+        
+        m_cov_agregada = np.empty((x_treino.shape[1], x_treino.shape[1]))
+        for xi in x_treino_separado:
+
+            # estimar as matrizes de covariancia 
+            matriz_de_covariancia = np.cov(np.array(xi).T)
+            matrizes_de_covariancia.append(matriz_de_covariancia)
+            m_cov_agregada += (len(xi)/N) * matriz_de_covariancia
+
+            # estimar os mis
+            total = [0, 0]
+            for i in xi:
+                total[0] += i[0]
+                total[1] += i[1]
+
+            mis.append(np.array([total[0] / len(xi), total[1] / len(xi)]))
+            bp = 1
+
+        self.matrizes_de_covariancia = matrizes_de_covariancia
+        self.mis = mis
+
+        self.m_cov_agregada = m_cov_agregada
+
+        self.estimate_friedman(x_treino_separado, N, self.lbda)
+
+    def estimate_friedman(self, x_treino_separado, N, lbda):
+        m_covs_friedman = []
+
+        for i in range(len(x_treino_separado)):
+            ni = len(x_treino_separado[i])
+            # estimar as matrizes de covariancia 
+            m_cov_friedman = self.matriz_friedman(self.matrizes_de_covariancia[i], N, ni, lbda)
+            m_covs_friedman.append(m_cov_friedman)
+
+        self.m_covs_friedman = m_covs_friedman
+        bp = 1
+    
+    def execute_friedman(self, x):
+        valores = []
+        for i in range(0, 5):
+            r = self.discriminante_friedman(x, self.mis[i], self.lbda, self.m_covs_friedman[i])
+            valores.append(r)
+
+        return valores
+    
+    def discriminante_friedman(self, x, mi, lbda, m_cov):
+        if (lbda == 0.0):
+            r = ((-1/2) * np.log(np.abs(m_cov))) - ((1/2) * (x - mi).T @ np.linalg.inv(m_cov)@(x - mi))
+        else:
+            r = (x - mi).T @ np.linalg.inv(m_cov) @ (x - mi)
+
+        return r
+    
+    def matriz_friedman(self, m_cov, N, n, lbda):
+        m_cov_friedman = ((1 - lbda) * (n*m_cov) + (lbda * N * self.m_cov_agregada)) / ((1 - lbda)*n + lbda * N)
+        return m_cov_friedman
+
+
+
+
+
