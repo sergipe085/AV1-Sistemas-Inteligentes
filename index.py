@@ -225,7 +225,7 @@ def execute_naive_bayes_fridman():
 
 		Xtreino, Ytreino, Xteste, Yteste = get_data_withouth_perceptron()
 
-		nb_fridman = naive_bayes_friedman(0.2)
+		nb_fridman = naive_bayes_friedman(0.1)
 		_, tempo_estimacao = execution_time(lambda: nb_fridman.estimate(Xtreino, Ytreino))
 
 		count = 0
@@ -248,11 +248,11 @@ def execute_naive_bayes_fridman():
 
 	print_result(nome_modelo, acuracias, tempos_estimacao, tempos_execucao)
 
-execute_mmq()
-execute_mmq_regularizado()
-# execute_naive_bayes(Regularizado=True)
-execute_naive_bayes()
-execute_naive_bayes_pooled()
-execute_naive_bayes_fridman()
+# execute_mmq()
+# execute_mmq_regularizado()
+# # execute_naive_bayes(Regularizado=True)
+# execute_naive_bayes()
+# execute_naive_bayes_pooled()
+# execute_naive_bayes_fridman()
 
 # plot_dados()
